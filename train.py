@@ -18,6 +18,8 @@ RUN_NAME = "crop_disease_cls"
 def get_device():
     if torch.backends.mps.is_available():
         return "mps"
+    if torch.cuda.is_available():
+        return "cuda"
     return "cpu"
 
 
@@ -32,28 +34,17 @@ def train(device):
         project=str(RUN_DIR),
         name=RUN_NAME,
         exist_ok=True,
+        pretrained=True,
+        verbose=True,
     )
 
     return model
 
 
-def find_best(model):
-    trainer = getattr(model, "trainer", None)
-    if trainer is None:
-        return None
-
-    best = getattr(trainer, "best", None)
-    if best:
-        p = Path(best)
-        if p.exists():
-            return p
-
-    save_dir = getattr(trainer, "save_dir", None)
-    if save_dir:
-        fallback = Path(save_dir) / "weights" / "best.pt"
-        if fallback.exists():
-            return fallback
-
+def locate_best_weights():
+    weights_path = RUN_DIR / RUN_NAME / "weights" / "best.pt"
+    if weights_path.exists():
+        return weights_path
     return None
 
 
@@ -68,16 +59,16 @@ def main():
         raise FileNotFoundError("data directory not found")
 
     device = get_device()
-    print("Device:", device)
+    print(f"Using device: {device}")
 
-    model = train(device)
+    train(device)
 
-    best = find_best(model)
+    best = locate_best_weights()
     if best is None:
-        raise FileNotFoundError("best.pt not produced")
+        raise FileNotFoundError("best.pt not found after training")
 
     dst = copy_best(best)
-    print("Saved:", dst)
+    print(f"Best model copied to: {dst}")
 
 
 if __name__ == "__main__":

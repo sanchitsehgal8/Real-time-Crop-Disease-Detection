@@ -4,7 +4,7 @@ from io import BytesIO
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from PIL import Image, UnidentifiedImageError
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 from backend.model import (
     InferenceError,
@@ -20,10 +20,81 @@ from backend.model import (
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png"}
 ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png"}
 
+disease_info = {
+    "Apple___Apple_scab": {
+        "description": "Fungal disease that causes olive-brown lesions on leaves and fruit, reducing fruit quality.",
+        "treatment": "Prune infected foliage, improve airflow, and apply preventive fungicides during wet periods.",
+    },
+    "Apple___Black_rot": {
+        "description": "Fungal infection causing dark leaf spots, cankers, and fruit rot in apples.",
+        "treatment": "Remove mummified fruits and cankered wood, sanitize orchard debris, and spray recommended fungicides.",
+    },
+    "Apple___Cedar_apple_rust": {
+        "description": "Rust disease producing orange-yellow lesions on apple leaves and fruit.",
+        "treatment": "Eliminate nearby juniper hosts where possible and apply rust-targeted fungicides at early growth stages.",
+    },
+    "Apple___healthy": {
+        "description": "Plant tissue appears healthy with no visible disease symptoms.",
+        "treatment": "No treatment required",
+    },
+    "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot": {
+        "description": "Fungal leaf disease causing rectangular gray lesions that reduce photosynthesis and yield.",
+        "treatment": "Use resistant hybrids, rotate crops, manage residue, and apply fungicide when disease pressure is high.",
+    },
+    "Corn_(maize)___healthy": {
+        "description": "Corn leaves show normal color and structure without disease symptoms.",
+        "treatment": "No treatment required",
+    },
+    "Grape___Black_rot": {
+        "description": "Fungal grape disease causing leaf spots and black, shriveled fruit mummies.",
+        "treatment": "Remove infected clusters, prune for airflow, and follow a protective fungicide schedule.",
+    },
+    "Grape___Esca_(Black_Measles)": {
+        "description": "Trunk disease associated with tiger-striped leaves, berry spotting, and vine decline.",
+        "treatment": "Prune infected wood, protect pruning wounds, and maintain vine nutrition and irrigation balance.",
+    },
+    "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)": {
+        "description": "Leaf spot disease causing angular brown lesions and premature defoliation in grapevines.",
+        "treatment": "Improve canopy ventilation, remove infected leaves, and apply suitable fungicides.",
+    },
+    "Grape___healthy": {
+        "description": "Grapevine foliage appears healthy with no signs of active disease.",
+        "treatment": "No treatment required",
+    },
+    "Peach___Bacterial_spot": {
+        "description": "Bacterial disease causing small angular lesions on leaves and pitted fruit spots.",
+        "treatment": "Use tolerant cultivars, avoid overhead irrigation, and apply copper-based bactericides as advised.",
+    },
+    "Peach___healthy": {
+        "description": "Peach leaves and fruit surfaces appear healthy and disease-free.",
+        "treatment": "No treatment required",
+    },
+    "Tomato___Early_blight": {
+        "description": "Fungal disease with concentric ring lesions on older leaves and potential fruit damage.",
+        "treatment": "Remove infected leaves, mulch soil, rotate crops, and use protective fungicides.",
+    },
+    "Tomato___Late_blight": {
+        "description": "Aggressive oomycete disease causing water-soaked lesions and rapid plant collapse.",
+        "treatment": "Rogue infected plants promptly, reduce leaf wetness, and apply late blight-specific fungicides.",
+    },
+    "Tomato___Tomato_Yellow_Leaf_Curl_Virus": {
+        "description": "Viral disease causing leaf curling, yellowing, and severe growth stunting.",
+        "treatment": "Control whitefly vectors, remove infected plants, and use resistant tomato varieties.",
+    },
+    "Tomato___healthy": {
+        "description": "Tomato plant tissue appears healthy with no visual disease indicators.",
+        "treatment": "No treatment required",
+    },
+}
+
 
 class PredictResponse(BaseModel):
-    predicted_class: str
+    model_config = ConfigDict(populate_by_name=True)
+
+    class_name: str = Field(alias="class")
     confidence: float
+    description: str
+    treatment: str
 
 
 class HealthResponse(BaseModel):
@@ -97,4 +168,17 @@ async def predict_image(file: UploadFile = File(...)) -> PredictResponse:
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Inference failed: {exc}") from exc
 
-    return PredictResponse(predicted_class=class_name, confidence=float(confidence))
+    info = disease_info.get(
+        class_name,
+        {
+            "description": "Information not available",
+            "treatment": "Consult agricultural specialist",
+        },
+    )
+
+    return PredictResponse(
+        class_name=class_name,
+        confidence=round(float(confidence), 4),
+        description=info["description"],
+        treatment=info["treatment"],
+    )
