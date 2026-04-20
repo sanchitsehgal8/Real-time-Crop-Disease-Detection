@@ -1,0 +1,10 @@
+ultralytics>=8.3.0
+torch>=2.2.0
+torchvision>=0.17.0
+fastapi==0.115.2
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+pillow==10.4.0
+ultralytics==8.3.39
+torch>=2.2.0
+torchvision>=0.17.0

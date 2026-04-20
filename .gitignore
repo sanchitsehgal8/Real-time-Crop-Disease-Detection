@@ -210,3 +210,22 @@ data/
 *.jpg
 *.jpeg
 *.png
+
+.DS_Store
+
+
+# training outputs
+runs/
+*.pt
+*.engine
+*.onnx
+
+# logs
+*.csv
+
+# python cache
+__pycache__/
+*.pyc
+
+# virtual env
+venv/
