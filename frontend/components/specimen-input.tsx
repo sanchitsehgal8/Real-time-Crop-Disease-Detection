@@ -8,24 +8,13 @@ import { Badge } from "@/components/ui/badge"
 interface SpecimenInputProps {
   onImageUpload: (file: File) => void
   uploadedImage: string | null
-  isBackendReady: boolean
 }
 
 export function SpecimenInput({ onImageUpload, uploadedImage }: SpecimenInputProps) {
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles.length > 0) {
-      onImageUpload(acceptedFiles[0])
-    }
-  }, [onImageUpload])
-
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'image/jpeg': ['.jpg', '.jpeg'],
-      'image/png': ['.png'],
-      'image/tiff': ['.tiff', '.tif']
-    },
-    maxSize: 50 * 1024 * 1024, // 50MB
+    onDrop: (acceptedFiles) => acceptedFiles.length > 0 && onImageUpload(acceptedFiles[0]),
+    accept: { 'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'], 'image/tiff': ['.tiff', '.tif'] },
+    maxSize: 50 * 1024 * 1024,
     multiple: false
   })
 
@@ -41,28 +30,13 @@ export function SpecimenInput({ onImageUpload, uploadedImage }: SpecimenInputPro
 
       <div
         {...getRootProps()}
-        className={`
-          border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
-          transition-colors duration-200
-          ${isDragActive 
-            ? 'border-primary bg-primary/5' 
-            : 'border-gray-300 hover:border-primary/50'
-          }
-          ${uploadedImage ? 'border-green-400 bg-green-50' : ''}
-        `}
+        className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors duration-200 ${isDragActive ? 'border-primary bg-primary/5' : 'border-gray-300 hover:border-primary/50'} ${uploadedImage ? 'border-green-400 bg-green-50' : ''}`}
       >
         <input {...getInputProps()} />
-        
         {uploadedImage ? (
           <div className="space-y-3">
-            <img 
-              src={uploadedImage} 
-              alt="Uploaded specimen" 
-              className="max-h-32 mx-auto rounded-lg object-contain"
-            />
-            <p className="text-sm text-muted-foreground">
-              Click or drag to replace image
-            </p>
+            <img src={uploadedImage} alt="Uploaded specimen" className="max-h-32 mx-auto rounded-lg object-contain" />
+            <p className="text-sm text-muted-foreground">Click or drag to replace image</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -70,16 +44,10 @@ export function SpecimenInput({ onImageUpload, uploadedImage }: SpecimenInputPro
               <CloudUpload className="w-6 h-6 text-green-600" />
             </div>
             <div>
-              <p className="font-medium text-foreground">
-                Drag and drop specimen image
-              </p>
-              <p className="text-sm text-muted-foreground">
-                or click to browse local files
-              </p>
+              <p className="font-medium text-foreground">Drag and drop specimen image</p>
+              <p className="text-sm text-muted-foreground">or click to browse local files</p>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Supports JPEG, PNG, TIFF up to 50MB
-            </p>
+            <p className="text-xs text-muted-foreground">Supports JPEG, PNG, TIFF up to 50MB</p>
           </div>
         )}
       </div>
