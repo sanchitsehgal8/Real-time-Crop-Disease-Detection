@@ -33,7 +33,7 @@ class YOLOClassifier:
             raise FileNotFoundError(f"Model file not found: {self.model_path}")
         self.model = YOLO(str(self.model_path))
 
-    def predict(self, image: Image.Image) -> tuple[str, float]:
+    def predict(self, image: Image.Image) -> tuple[str, float, torch.Tensor]:
         if self.model is None:
             raise ModelNotLoadedError("Model is not loaded")
 
@@ -81,7 +81,9 @@ class YOLOClassifier:
         else:
             class_name = str(top1)
 
-        return class_name, top1conf
+        # Return full probability distribution for entropy calculation
+        prob_distribution = probs.data if hasattr(probs, "data") else probs
+        return class_name, top1conf, prob_distribution
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -93,7 +95,7 @@ def load_model() -> None:
     _classifier.load()
 
 
-def predict(image: Image.Image) -> tuple[str, float]:
+def predict(image: Image.Image) -> tuple[str, float, torch.Tensor]:
     return _classifier.predict(image)
 
 

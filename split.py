@@ -1,53 +1,68 @@
 import os
-import shutil
 import random
+import shutil
 
-source_dir = "dataset"
-output_dir = "data"
+DATA_DIR = "data"
+UNKNOWN_DIR = "unknown_backround"
 
-train_ratio = 0.70
-val_ratio = 0.15
-test_ratio = 0.15
+SPLITS = ["train", "val", "test"]
+IMG_EXT = (".jpg", ".jpeg", ".png")
 
-random.seed(42)
+# Step 1: count images already present in dataset splits
+split_counts = {}
 
-for split in ["train", "val", "test"]:
-    os.makedirs(os.path.join(output_dir, split), exist_ok=True)
+for split in SPLITS:
+    split_path = os.path.join(DATA_DIR, split)
+    count = 0
 
-for class_name in os.listdir(source_dir):
-    class_path = os.path.join(source_dir, class_name)
+    for root, _, files in os.walk(split_path):
+        count += len([f for f in files if f.lower().endswith(IMG_EXT)])
 
-    if not os.path.isdir(class_path):
-        continue
+    split_counts[split] = count
 
-    images = os.listdir(class_path)
-    random.shuffle(images)
+total = sum(split_counts.values())
 
-    total = len(images)
+split_ratios = {
+    split: split_counts[split] / total
+    for split in SPLITS
+}
 
-    train_end = int(total * train_ratio)
-    val_end = int(total * (train_ratio + val_ratio))
+print("Detected dataset ratios:", split_ratios)
 
-    train_images = images[:train_end]
-    val_images = images[train_end:val_end]
-    test_images = images[val_end:]
 
-    splits = {
-        "train": train_images,
-        "val": val_images,
-        "test": test_images
-    }
+# Step 2: load unknown_background images
+images = [
+    f for f in os.listdir(UNKNOWN_DIR)
+    if f.lower().endswith(IMG_EXT)
+]
 
-    for split_name in splits:
-        split_class_dir = os.path.join(output_dir, split_name, class_name)
-        os.makedirs(split_class_dir, exist_ok=True)
+random.shuffle(images)
 
-        for image in splits[split_name]:
-            src = os.path.join(class_path, image)
-            new_name = f"{split_name}_{image}"
-            dst = os.path.join(split_class_dir, new_name)
-            shutil.copy(src, dst)
+n = len(images)
 
-    print(f"Processed class: {class_name}")
+train_n = int(split_ratios["train"] * n)
+val_n = int(split_ratios["val"] * n)
 
-print("Dataset split completed successfully.")
+train_imgs = images[:train_n]
+val_imgs = images[train_n:train_n + val_n]
+test_imgs = images[train_n + val_n:]
+
+
+split_map = {
+    "train": train_imgs,
+    "val": val_imgs,
+    "test": test_imgs
+}
+
+
+# Step 3: copy images into dataset folders
+for split, img_list in split_map.items():
+    target_dir = os.path.join(DATA_DIR, split, "unknown_background")
+    os.makedirs(target_dir, exist_ok=True)
+
+    for img in img_list:
+        src = os.path.join(UNKNOWN_DIR, img)
+        dst = os.path.join(target_dir, img)
+        shutil.copy(src, dst)
+
+print("✅ unknown_background successfully added to train/val/test")

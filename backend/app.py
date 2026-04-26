@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import math
 from io import BytesIO
 
+import numpy as np
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image, UnidentifiedImageError
@@ -96,6 +98,7 @@ class PredictResponse(BaseModel):
     confidence: float
     description: str
     treatment: str
+    entropy: float = Field(default=0.0, description="Shannon entropy for debugging")
 
 
 class HealthResponse(BaseModel):
@@ -175,7 +178,7 @@ async def predict_image(file: UploadFile = File(...)) -> PredictResponse:
         raise HTTPException(status_code=400, detail=f"Unable to read image: {exc}") from exc
 
     try:
-        class_name, confidence = predict(image)
+        class_name, confidence, prob_dist = predict(image)
     except ModelNotLoadedError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except FileNotFoundError as exc:
@@ -185,6 +188,24 @@ async def predict_image(file: UploadFile = File(...)) -> PredictResponse:
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Inference failed: {exc}") from exc
 
+    # Calculate Shannon entropy for uncertainty quantification
+    # Entropy = -sum(p * log(p)) measures how spread out the probability distribution is
+    # Max entropy for 17 classes = log(17) ≈ 2.833 (uniform distribution)
+    # Threshold of 1.8 flags predictions where model confidence is distributed across many classes
+    # This catches ambiguous inputs that should not be trusted (e.g., non-leaf images)
+    probs_numpy = np.array(prob_dist.cpu().numpy() if hasattr(prob_dist, 'cpu') else prob_dist)
+    probs_numpy = np.clip(probs_numpy, 1e-10, 1.0)  # Avoid log(0)
+    entropy = float(-np.sum(probs_numpy * np.log(probs_numpy)))
+
+    # Entropy-based rejection: if model is very uncertain, reject prediction
+    if entropy > 1.8:
+        class_name = "Unknown___background"
+        confidence = 0.0
+    # If top prediction is background or confidence too low, mark as non-leaf
+    elif class_name == "Unknown___background" or confidence < 0.65:
+        class_name = "Unknown___background"
+        confidence = 0.0
+
     info = disease_info.get(
         class_name,
         {
@@ -193,9 +214,18 @@ async def predict_image(file: UploadFile = File(...)) -> PredictResponse:
         },
     )
 
+    # Override description/treatment for background class
+    if class_name == "Unknown___background":
+        description = "Input is not a crop leaf or is too ambiguous for diagnosis."
+        treatment = "Please provide a clear image of a crop leaf."
+    else:
+        description = info["description"]
+        treatment = info["treatment"]
+
     return PredictResponse(
-        class_name=class_name,
+        class_name="Not a crop leaf" if class_name == "Unknown___background" else class_name,
         confidence=round(float(confidence), 4),
-        description=info["description"],
-        treatment=info["treatment"],
+        description=description,
+        treatment=treatment,
+        entropy=round(entropy, 4),
     )

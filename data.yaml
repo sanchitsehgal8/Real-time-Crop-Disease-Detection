@@ -11,7 +11,7 @@ val: val
 test: test
 
 
-nc: 16
+nc: 17
 
 names:
   - Apple___Apple_scab
@@ -30,3 +30,4 @@ names:
   - Tomato___Late_blight
   - Tomato___Tomato_Yellow_Leaf_Curl_Virus
   - Tomato___healthy
+  - Unknown_Background
