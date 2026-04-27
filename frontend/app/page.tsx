@@ -11,13 +11,13 @@ import { usePrediction } from "@/hooks/use-prediction"
 
 const BackendStatusAlert = ({ isLoading, isHealthy, error }: any) => {
   if (isLoading) return (
-    <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 mb-8 flex items-center gap-3">
+    <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 mb-6 flex items-center gap-3">
       <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
       <span className="text-blue-700 text-sm font-medium">Connecting to backend...</span>
     </div>
   )
   if (!isHealthy) return (
-    <div className="bg-red-50 border border-red-200 rounded-2xl p-6 mb-8 flex items-start gap-3">
+    <div className="bg-red-50 border border-red-200 rounded-2xl p-6 mb-6 flex items-start gap-3">
       <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
       <div>
         <p className="text-red-700 font-medium">Backend Unavailable</p>
@@ -25,12 +25,7 @@ const BackendStatusAlert = ({ isLoading, isHealthy, error }: any) => {
       </div>
     </div>
   )
-  return (
-    <div className="bg-green-50 border border-green-200 rounded-2xl p-6 mb-8 flex items-center gap-3">
-      <div className="w-2 h-2 rounded-full bg-green-500" />
-      <span className="text-green-700 text-sm font-medium">Backend connected and ready</span>
-    </div>
-  )
+  return null
 }
 
 export default function CropDiseaseAnalysis() {
@@ -52,7 +47,7 @@ export default function CropDiseaseAnalysis() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      <main className="flex-1 px-6 py-8 md:px-12 lg:px-20">
+      <main className="flex-1 px-6 py-4 md:px-12 lg:px-20">
         <div className="max-w-6xl mx-auto">
           <BackendStatusAlert isLoading={isLoading} isHealthy={isHealthy} error={error} />
           <div className="bg-card rounded-2xl p-8 md:p-12 shadow-sm">
