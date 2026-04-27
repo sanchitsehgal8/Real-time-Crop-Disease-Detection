@@ -1,0 +1,18 @@
+class,accuracy
+Apple___Apple_scab,1.000000
+Apple___Black_rot,1.000000
+Apple___Cedar_apple_rust,1.000000
+Apple___healthy,1.000000
+Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot,1.000000
+Corn_(maize)___healthy,1.000000
+Grape___Black_rot,1.000000
+Grape___Esca_(Black_Measles),1.000000
+Grape___Leaf_blight_(Isariopsis_Leaf_Spot),1.000000
+Grape___healthy,1.000000
+Peach___Bacterial_spot,1.000000
+Peach___healthy,1.000000
+Tomato___Early_blight,0.993289
+Tomato___Late_blight,0.993056
+Tomato___Tomato_Yellow_Leaf_Curl_Virus,1.000000
+Tomato___healthy,1.000000
+unknown_background,1.000000

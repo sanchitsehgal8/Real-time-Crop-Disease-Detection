@@ -1,0 +1,15 @@
+Crop Disease Classifier Evaluation Report
+
+Model: /Users/sanchit/Desktop/Projects/Real-time-Crop-Disease-Detection/best.pt
+Device: mps
+Validation accuracy (Top-1): 1.000000
+Validation Top-5 accuracy: 1.000000
+Test accuracy (Top-1): 0.999085
+Test Top-5 accuracy: 1.000000
+Validation Loss: N/A
+Test Loss: N/A
+Number of classes: 17
+Total samples evaluated: 13103
+
+Confusion matrix: /Users/sanchit/Desktop/Projects/Real-time-Crop-Disease-Detection/runs/evaluation/confusion_matrix.png
+Metrics JSON: /Users/sanchit/Desktop/Projects/Real-time-Crop-Disease-Detection/runs/evaluation/metrics.json

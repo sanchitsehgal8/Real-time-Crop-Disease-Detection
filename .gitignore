@@ -215,13 +215,9 @@ data/
 
 
 # training outputs
-runs/
-*.pt
-*.engine
-*.onnx
 
 # logs
-*.csv
+
 
 # python cache
 __pycache__/

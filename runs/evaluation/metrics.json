@@ -1,0 +1,47 @@
+{
+  "device": "mps",
+  "model_path": "/Users/sanchit/Desktop/Projects/Real-time-Crop-Disease-Detection/best.pt",
+  "output_dir": "/Users/sanchit/Desktop/Projects/Real-time-Crop-Disease-Detection/runs/evaluation",
+  "num_classes": 17,
+  "total_samples_evaluated": 13103,
+  "validation": {
+    "top1_accuracy": 1.0,
+    "top5_accuracy": 1.0,
+    "loss": null,
+    "samples": 6544
+  },
+  "test": {
+    "top1_accuracy": 0.9990852475166321,
+    "top5_accuracy": 1.0,
+    "loss": null,
+    "samples": 6559
+  },
+  "per_class_accuracy": {
+    "Apple___Apple_scab": 1.0,
+    "Apple___Black_rot": 1.0,
+    "Apple___Cedar_apple_rust": 1.0,
+    "Apple___healthy": 1.0,
+    "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot": 1.0,
+    "Corn_(maize)___healthy": 1.0,
+    "Grape___Black_rot": 1.0,
+    "Grape___Esca_(Black_Measles)": 1.0,
+    "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)": 1.0,
+    "Grape___healthy": 1.0,
+    "Peach___Bacterial_spot": 1.0,
+    "Peach___healthy": 1.0,
+    "Tomato___Early_blight": 0.9932885906040269,
+    "Tomato___Late_blight": 0.9930555555555556,
+    "Tomato___Tomato_Yellow_Leaf_Curl_Virus": 1.0,
+    "Tomato___healthy": 1.0,
+    "unknown_background": 1.0
+  },
+  "artifacts": {
+    "confusion_matrix": "/Users/sanchit/Desktop/Projects/Real-time-Crop-Disease-Detection/runs/evaluation/confusion_matrix.png",
+    "per_class_accuracy_csv": "/Users/sanchit/Desktop/Projects/Real-time-Crop-Disease-Detection/runs/evaluation/per_class_accuracy.csv",
+    "per_class_accuracy_plot": "/Users/sanchit/Desktop/Projects/Real-time-Crop-Disease-Detection/runs/evaluation/per_class_accuracy.png",
+    "metrics_plot": "/Users/sanchit/Desktop/Projects/Real-time-Crop-Disease-Detection/runs/evaluation/metrics_plot.png",
+    "prediction_samples_dir": "/Users/sanchit/Desktop/Projects/Real-time-Crop-Disease-Detection/runs/evaluation/prediction_samples",
+    "validation_artifacts_dir": "/Users/sanchit/Desktop/Projects/Real-time-Crop-Disease-Detection/runs/evaluation/val",
+    "test_artifacts_dir": "/Users/sanchit/Desktop/Projects/Real-time-Crop-Disease-Detection/runs/evaluation/test"
+  }
+}
