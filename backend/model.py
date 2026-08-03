@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import torch
@@ -26,6 +27,8 @@ class YOLOClassifier:
     def _detect_device() -> str:
         if torch.backends.mps.is_available() and torch.backends.mps.is_built():
             return "mps"
+        if torch.cuda.is_available():
+            return "cuda"
         return "cpu"
 
     def load(self) -> None:
@@ -87,7 +90,10 @@ class YOLOClassifier:
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-MODEL_PATH = PROJECT_ROOT / "best.pt"
+# Absolute by default so the path is independent of the working directory the
+# server was launched from. MODEL_PATH overrides it for container images that
+# stage the weights somewhere other than the repo root.
+MODEL_PATH = Path(os.getenv("MODEL_PATH") or PROJECT_ROOT / "best.pt")
 _classifier = YOLOClassifier(MODEL_PATH)
 
 

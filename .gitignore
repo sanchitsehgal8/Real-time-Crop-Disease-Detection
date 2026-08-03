@@ -250,3 +250,58 @@ dist-ssr
 *.sln
 *.sw?
 
+# Frontend source — re-include what the Python and dataset rules above swallow.
+# `lib/` (Python venv layout) hides frontend/lib/, and *.png/*.jpg (dataset images)
+# hide frontend/public/. Both are real source and must ship to the build.
+!frontend/lib/
+!frontend/public/**/*.png
+!frontend/public/**/*.jpg
+!frontend/public/**/*.jpeg
+!frontend/public/**/*.svg
+
+# Cloudflare / OpenNext build output
+frontend/.open-next/
+frontend/.wrangler/
+frontend/cloudflare-env.d.ts
+frontend/tsconfig.tsbuildinfo
+
+# Local env files (see .env.example and frontend/.env.example)
+.env
+.env.local
+.env.*.local
+
+# Unused 354 MB CLIP checkpoint; nothing in the repo references it.
+weights/
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Models
+*.pt
+*.pth
+*.onnx
+weights/
+
+# Node
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Environment
+.env
+.env.local
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# Build
+dist/
+build/
+na

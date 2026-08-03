@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import math
+import os
+from contextlib import asynccontextmanager
 from io import BytesIO
 
 import numpy as np
@@ -20,8 +21,53 @@ from backend.model import (
 )
 
 
-ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png"}
-ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png"}
+def _env_float(name: str, default: float) -> float:
+    try:
+        return float(os.environ[name])
+    except (KeyError, ValueError):
+        return default
+
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        return int(os.environ[name])
+    except (KeyError, ValueError):
+        return default
+
+
+DEFAULT_CORS_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+
+# Comma-separated, e.g. CORS_ORIGINS=https://agrovision.<subdomain>.workers.dev
+# Falls back to the local dev servers when unset.
+CORS_ORIGINS = [
+    origin.strip() for origin in os.getenv("CORS_ORIGINS", "").split(",") if origin.strip()
+] or DEFAULT_CORS_ORIGINS
+
+# Kept in sync with the dropzone in frontend/components/specimen-input.tsx,
+# which also accepts TIFF.
+ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "tif", "tiff"}
+ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/tiff"}
+
+# Server-side cap. The 50 MB limit in the dropzone is client-side only, and a
+# direct POST bypasses it entirely.
+MAX_UPLOAD_BYTES = _env_int("MAX_UPLOAD_BYTES", 10 * 1024 * 1024)
+
+# Out-of-distribution rejection thresholds. Both are inherited defaults that
+# were never derived from a validation sweep — see DEPLOYMENT.md.
+ENTROPY_MAX = _env_float("ENTROPY_MAX", 1.8)
+CONFIDENCE_MIN = _env_float("CONFIDENCE_MIN", 0.65)
+
+# Class 16 exactly as spelled inside best.pt, verified with YOLO("best.pt").names.
+# Earlier revisions compared against "Unknown___background", which never matched,
+# so a confident background prediction fell through to the disease_info lookup.
+BACKGROUND_CLASS = "unknown_background"
 
 disease_info = {
     "Apple___Apple_scab": {
@@ -108,33 +154,33 @@ class HealthResponse(BaseModel):
     model_path: str
 
 
-app = FastAPI(title="Crop Disease Classification API", version="1.0.0")
-app.state.startup_error = None
-
-# Add CORS middleware to allow frontend communication
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-@app.on_event("startup")
-async def startup_event() -> None:
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # A failed load degrades /predict to a 503 with the reason attached rather
+    # than crashing the process, so /health stays reachable for diagnosis.
     try:
         load_model()
         app.state.startup_error = None
     except Exception as exc:
         app.state.startup_error = str(exc)
+    yield
+
+
+app = FastAPI(
+    title="Crop Disease Classification API",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+app.state.startup_error = None
+
+# Add CORS middleware to allow frontend communication
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -168,6 +214,11 @@ async def predict_image(file: UploadFile = File(...)) -> PredictResponse:
         payload = await file.read()
         if not payload:
             raise HTTPException(status_code=400, detail="Uploaded file is empty")
+        if len(payload) > MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File exceeds the {MAX_UPLOAD_BYTES // (1024 * 1024)} MB upload limit",
+            )
 
         image = Image.open(BytesIO(payload)).convert("RGB")
     except UnidentifiedImageError:
@@ -191,19 +242,16 @@ async def predict_image(file: UploadFile = File(...)) -> PredictResponse:
     # Calculate Shannon entropy for uncertainty quantification
     # Entropy = -sum(p * log(p)) measures how spread out the probability distribution is
     # Max entropy for 17 classes = log(17) ≈ 2.833 (uniform distribution)
-    # Threshold of 1.8 flags predictions where model confidence is distributed across many classes
+    # ENTROPY_MAX flags predictions where confidence is distributed across many classes
     # This catches ambiguous inputs that should not be trusted (e.g., non-leaf images)
     probs_numpy = np.array(prob_dist.cpu().numpy() if hasattr(prob_dist, 'cpu') else prob_dist)
     probs_numpy = np.clip(probs_numpy, 1e-10, 1.0)  # Avoid log(0)
     entropy = float(-np.sum(probs_numpy * np.log(probs_numpy)))
 
-    # Entropy-based rejection: if model is very uncertain, reject prediction
-    if entropy > 1.8:
-        class_name = "Unknown___background"
-        confidence = 0.0
-    # If top prediction is background or confidence too low, mark as non-leaf
-    elif class_name == "Unknown___background" or confidence < 0.65:
-        class_name = "Unknown___background"
+    # Reject when the distribution is too flat to trust, when the model itself
+    # picked the background class, or when the top-1 margin is too thin.
+    if entropy > ENTROPY_MAX or class_name == BACKGROUND_CLASS or confidence < CONFIDENCE_MIN:
+        class_name = BACKGROUND_CLASS
         confidence = 0.0
 
     info = disease_info.get(
@@ -215,7 +263,7 @@ async def predict_image(file: UploadFile = File(...)) -> PredictResponse:
     )
 
     # Override description/treatment for background class
-    if class_name == "Unknown___background":
+    if class_name == BACKGROUND_CLASS:
         description = "Input is not a crop leaf or is too ambiguous for diagnosis."
         treatment = "Please provide a clear image of a crop leaf."
     else:
@@ -223,7 +271,7 @@ async def predict_image(file: UploadFile = File(...)) -> PredictResponse:
         treatment = info["treatment"]
 
     return PredictResponse(
-        class_name="Not a crop leaf" if class_name == "Unknown___background" else class_name,
+        class_name="Not a crop leaf" if class_name == BACKGROUND_CLASS else class_name,
         confidence=round(float(confidence), 4),
         description=description,
         treatment=treatment,

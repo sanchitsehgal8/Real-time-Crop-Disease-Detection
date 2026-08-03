@@ -1,10 +1,21 @@
-ultralytics>=8.3.0
-torch>=2.2.0
-torchvision>=0.17.0
+# Runtime dependencies for the inference API (backend/app.py).
+# Training and evaluation extras live in requirements-train.txt.
+#
+# IMPORTANT: `pip install torch` from the default PyPI index resolves to the
+# CUDA build, which pulls the nvidia-* packages and lands at ~2 GB installed.
+# For CPU serving, install torch from PyTorch's CPU index FIRST:
+#
+#   pip install --index-url https://download.pytorch.org/whl/cpu \
+#       torch==2.11.0+cpu torchvision==0.26.0+cpu
+#
+# The versions below are satisfied by those wheels, so pip will leave them in
+# place. The Dockerfile does exactly this.
+
 fastapi==0.115.2
 uvicorn[standard]==0.30.6
 python-multipart==0.0.9
 pillow==10.4.0
+numpy==1.26.4
 ultralytics==8.3.39
 torch>=2.2.0
 torchvision>=0.17.0

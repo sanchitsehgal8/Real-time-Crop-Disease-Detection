@@ -1,0 +1,11 @@
+# Allow-list, not deny-list. The repo contains data/ (736 MB), venv/ (1.1 GB),
+# and weights/ (354 MB); a missed deny rule silently balloons the build context.
+*
+
+!requirements.txt
+!backend/
+!best.pt
+
+# Re-exclude what slipped in under backend/.
+backend/__pycache__/
+backend/main.py

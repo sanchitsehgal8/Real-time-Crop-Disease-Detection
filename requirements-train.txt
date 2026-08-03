@@ -1,0 +1,10 @@
+# Training and evaluation extras: split.py, train.py, evaluate.py,
+# "check balance.py", and backend/main.py (webcam streaming).
+#
+# ultralytics already depends on matplotlib and opencv-python, but the scripts
+# import them directly, so they are pinned here rather than left implicit.
+
+-r requirements.txt
+
+matplotlib==3.9.2
+opencv-python==4.11.0.86

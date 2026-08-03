@@ -1,0 +1,10 @@
+# pnpm 10+ blocks dependency postinstall scripts by default, and pnpm 11 reads
+# this setting here rather than from the "pnpm" field in package.json.
+#
+# workerd and esbuild both fetch prebuilt binaries in a postinstall script.
+# Without these approvals, `wrangler` and `opennextjs-cloudflare build` fail with
+# a missing-binary error — including in Cloudflare Workers Builds.
+allowBuilds:
+  esbuild: true
+  sharp: true
+  workerd: true

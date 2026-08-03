@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "agrovision",
+
+  // Both paths are produced by `opennextjs-cloudflare build`, not by `next build`.
+  "main": ".open-next/worker.js",
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+
+  // Matches the workerd version pinned in pnpm-lock.yaml. A date newer than the
+  // installed workerd is a hard error, so bump this only alongside wrangler.
+  "compatibility_date": "2026-07-30",
+  "compatibility_flags": [
+    // Required by the OpenNext adapter: Next.js server code needs Node builtins.
+    "nodejs_compat",
+    // Routes same-worker fetches back through the public internet, matching how
+    // Next.js expects absolute-URL fetches to behave.
+    "global_fetch_strictly_public"
+  ],
+
+  "observability": {
+    "enabled": true
+  }
+}

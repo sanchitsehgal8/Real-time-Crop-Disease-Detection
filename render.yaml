@@ -1,0 +1,43 @@
+# Render Blueprint — deploys both halves of the project from this one repo.
+# Create it with: Render dashboard -> New -> Blueprint -> pick this repo.
+#
+# Measured peak RSS of the inference path is ~358 MB (torch import 198 MB,
+# + ultralytics 258 MB, + model 341 MB, + inference 358 MB), so the 512 MB
+# Starter plan fits with headroom. Free also has 512 MB but only 0.1 CPU and
+# spins down after 15 minutes idle, with a ~1 minute cold start.
+services:
+  # ── FastAPI + YOLOv8 inference API ──────────────────────────────────────
+  - type: web
+    name: agrovision-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter
+    region: singapore
+    healthCheckPath: /health
+    envVars:
+      # Must list the frontend's origin or the browser blocks every request.
+      # Set after the first deploy, once the web service URL is known.
+      - key: CORS_ORIGINS
+        sync: false
+
+  # ── Next.js frontend ────────────────────────────────────────────────────
+  - type: web
+    name: agrovision-web
+    runtime: node
+    rootDir: frontend
+    plan: starter
+    region: singapore
+    buildCommand: npm install -g pnpm@11.18.0 && pnpm install --frozen-lockfile && pnpm build
+    startCommand: pnpm start
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # Inlined into the client bundle at BUILD time, so a change here needs a
+      # rebuild, not just a restart.
+      #
+      # Render derives this hostname from the service name above. If the
+      # agrovision-api subdomain was already taken globally, Render appends a
+      # suffix — check the API service's real URL and correct this value.
+      - key: NEXT_PUBLIC_API_URL
+        value: https://agrovision-api.onrender.com

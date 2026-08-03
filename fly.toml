@@ -1,0 +1,39 @@
+# Fly.io config for the inference API. See DEPLOYMENT.md.
+#
+# App names are globally unique — if `fly launch` reports the name is taken,
+# change it here and re-run.
+app = "agrovision-api"
+
+# Mumbai. Change to your nearest region (`fly platform regions` lists them);
+# this is the round-trip every prediction pays.
+primary_region = "bom"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+
+  # Keep one machine running. Scaling to zero means the next request pays
+  # container boot + `import torch` + model load (10-20s), and the frontend's
+  # on-mount health check will render "Backend Unavailable" before it wakes.
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    path = "/health"
+    method = "GET"
+    interval = "30s"
+    timeout = "5s"
+    # Generous: the first check must wait for torch to import and the model to load.
+    grace_period = "60s"
+
+[[vm]]
+  # Measured peak RSS of the inference path is ~358 MB, so 1 GB leaves ~2.5x
+  # headroom. Raise this if you increase uvicorn --workers (each worker loads
+  # its own copy of the model).
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1
